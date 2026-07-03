@@ -1,4 +1,4 @@
-const requiredFields = ["name", "email", "country", "quantity", "message"];
+import { Resend } from "resend";
 
 function jsonResponse(body, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -8,6 +8,8 @@ function jsonResponse(body, status = 200) {
     }
   });
 }
+
+const requiredFields = ["name", "email", "country", "quantity", "message"];
 
 function isEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -22,31 +24,47 @@ export async function onRequestPost(context) {
     return jsonResponse({ ok: false, error: "Invalid JSON payload." }, 400);
   }
 
-  const missing = requiredFields.filter((field) => !payload[field]?.trim());
+  const missing = requiredFields.filter((field) => {
+    const value = payload[field];
+    return !value || String(value).trim() === "";
+  });
 
   if (missing.length > 0) {
-    return jsonResponse({ ok: false, error: "Missing required fields.", missing }, 400);
+    return jsonResponse({ ok: false, error: "Missing required fields", missing }, 400);
   }
 
-  if (!isEmail(payload.email || "")) {
-    return jsonResponse({ ok: false, error: "Invalid email address." }, 400);
+  if (!isEmail(payload.email)) {
+    return jsonResponse({ ok: false, error: "Invalid email" }, 400);
   }
 
-  const inquiry = {
-    receivedAt: new Date().toISOString(),
-    toEmail: context.env.INQUIRY_TO_EMAIL || "etersto@outlook.com",
-    ...payload
-  };
+  // ✅ 正确读取 Cloudflare env
+  const resend = new Resend(context.env.RESEND_API_KEY);
 
-  // Production hooks:
-  // 1. Verify Turnstile token.
-  // 2. Send email through the selected provider.
-  // 3. Store the inquiry in Google Sheets or Airtable.
-  console.log("New Etersto Apparel inquiry", inquiry);
+  try {
+    await resend.emails.send({
+      from: "Etersto Inquiry <onboarding@resend.dev>",
+      to: "etersto@outlook.com",
+      subject: `New Inquiry from ${payload.name}`,
+      html: `
+        <h2>New Inquiry</h2>
+        <p><b>Name:</b> ${payload.name}</p>
+        <p><b>Email:</b> ${payload.email}</p>
+        <p><b>Country:</b> ${payload.country}</p>
+        <p><b>Quantity:</b> ${payload.quantity}</p>
+        <p><b>Message:</b> ${payload.message}</p>
+      `
+    });
 
-  return jsonResponse({ ok: true });
+    return jsonResponse({ ok: true });
+  } catch (err) {
+    return jsonResponse({
+      ok: false,
+      error: "Email send failed",
+      detail: err.message
+    }, 500);
+  }
 }
 
 export async function onRequestGet() {
-  return jsonResponse({ ok: false, error: "Use POST to submit an inquiry." }, 405);
+  return jsonResponse({ ok: false, error: "Use POST" }, 405);
 }
