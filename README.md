@@ -51,4 +51,4 @@ The inquiry endpoint is implemented as a Cloudflare Pages Function at `/api/inqu
 
 ## Environment Variables
 
-Copy `.env.example` into Cloudflare Pages project variables when wiring live delivery.
+Copy `.env.example` into Cloudflare Pages project variables when wiring live delivery. 
