@@ -1,4 +1,4 @@
-import { Resend } from "resend";
+const requiredFields = ["name", "email", "country", "quantity", "message"];
 
 function jsonResponse(body, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -9,19 +9,13 @@ function jsonResponse(body, status = 200) {
   });
 }
 
-const requiredFields = ["name", "email", "country", "quantity", "message"];
-
-function isEmail(value) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-}
-
 export async function onRequestPost(context) {
   let payload;
 
   try {
     payload = await context.request.json();
   } catch {
-    return jsonResponse({ ok: false, error: "Invalid JSON payload." }, 400);
+    return jsonResponse({ ok: false, error: "Invalid JSON" }, 400);
   }
 
   const missing = requiredFields.filter((field) => {
@@ -30,41 +24,24 @@ export async function onRequestPost(context) {
   });
 
   if (missing.length > 0) {
-    return jsonResponse({ ok: false, error: "Missing required fields", missing }, 400);
+    return jsonResponse(
+      { ok: false, error: "Missing fields", missing },
+      400
+    );
   }
 
-  if (!isEmail(payload.email)) {
-    return jsonResponse({ ok: false, error: "Invalid email" }, 400);
-  }
+  // ✅ 暂时只做记录（确保系统稳定）
+  console.log("INQUIRY RECEIVED:", payload);
 
-  // ✅ 正确读取 Cloudflare env
-  const resend = new Resend(context.env.RESEND_API_KEY);
-
-  try {
-    await resend.emails.send({
-      from: "Etersto Inquiry <onboarding@resend.dev>",
-      to: "etersto@outlook.com",
-      subject: `New Inquiry from ${payload.name}`,
-      html: `
-        <h2>New Inquiry</h2>
-        <p><b>Name:</b> ${payload.name}</p>
-        <p><b>Email:</b> ${payload.email}</p>
-        <p><b>Country:</b> ${payload.country}</p>
-        <p><b>Quantity:</b> ${payload.quantity}</p>
-        <p><b>Message:</b> ${payload.message}</p>
-      `
-    });
-
-    return jsonResponse({ ok: true });
-  } catch (err) {
-    return jsonResponse({
-      ok: false,
-      error: "Email send failed",
-      detail: err.message
-    }, 500);
-  }
+  return jsonResponse({
+    ok: true,
+    message: "received"
+  });
 }
 
 export async function onRequestGet() {
-  return jsonResponse({ ok: false, error: "Use POST" }, 405);
+  return jsonResponse(
+    { ok: false, error: "Use POST" },
+    405
+  );
 }
