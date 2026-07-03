@@ -33,7 +33,7 @@ export async function onRequestPost(context) {
     },
     body: JSON.stringify({
       from: "Etersto Inquiry <onboarding@resend.dev>",
-      to: "etersto@outlook.com",
+      to: "smtfur@163.com",
       subject: `New Inquiry - ${payload.name}`,
       html: `
         <h2>New Inquiry</h2>
@@ -45,7 +45,6 @@ export async function onRequestPost(context) {
       `
     })
   });
- console.log("API KEY:", context.env.RESEND_API_KEY);
   const data = await res.json();
 
   return jsonResponse({
