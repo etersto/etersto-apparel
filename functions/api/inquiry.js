@@ -39,8 +39,13 @@ export async function onRequestPost(context) {
         <h2>New Inquiry</h2>
         <p><b>Name:</b> ${payload.name}</p>
         <p><b>Email:</b> ${payload.email}</p>
+        <p><b>Whatsapp:</b> ${payload.whatsapp}</p>
         <p><b>Country:</b> ${payload.country}</p>
+        <p><b>Company:</b> ${payload.company}</p>
+        <p><b>ProductType:</b> ${payload.productType}</p>
+        <p><b>Customization:</b> ${payload.customization}</p>
         <p><b>Quantity:</b> ${payload.quantity}</p>
+        <p><b>HasTechPack: "No",:</b> ${payload.hasTechPack}</p>
         <p><b>Message:</b> ${payload.message}</p>
       `
     })
