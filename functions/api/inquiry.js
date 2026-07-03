@@ -45,7 +45,7 @@ export async function onRequestPost(context) {
       `
     })
   });
- 
+ console.log("API KEY:", context.env.RESEND_API_KEY);
   const data = await res.json();
 
   return jsonResponse({
