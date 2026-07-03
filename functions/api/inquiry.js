@@ -10,31 +10,34 @@ function jsonResponse(body, status = 200) {
 const requiredFields = ["name", "email", "country", "quantity", "message"];
 
 export async function onRequestPost(context) {
-  let payload;
+  const payload = await context.request.json();
 
-  try {
-    payload = await context.request.json();
-  } catch {
-    return jsonResponse({ ok: false, error: "Invalid JSON" }, 400);
-  }
-
-  const missing = requiredFields.filter((f) => {
-    const v = payload[f];
-    return !v || String(v).trim() === "";
-  });
+  // 1. 检查字段
+  const missing = requiredFields.filter(
+    (f) => !payload[f] || String(payload[f]).trim() === ""
+  );
 
   if (missing.length) {
-    return jsonResponse({ ok: false, error: "Missing fields", missing }, 400);
+    return jsonResponse({ ok: false, missing }, 400);
   }
 
-  // ✅ 读取 Cloudflare env
-  const resend = new Resend(context.env.RESEND_API_KEY);
+  // 2. 正确读取 Cloudflare 环境变量（重点）
+  const apiKey = context.env.RESEND_API_KEY;
+
+  if (!apiKey) {
+    return jsonResponse({
+      ok: false,
+      error: "Missing RESEND_API_KEY in Cloudflare"
+    }, 500);
+  }
+
+  const resend = new Resend(apiKey);
 
   try {
-    const result = await resend.emails.send({
+    await resend.emails.send({
       from: "Etersto Inquiry <onboarding@resend.dev>",
-      to: "etersto@outlook.com",   // 👈 改成你的邮箱
-      subject: `New Inquiry from ${payload.name}`,
+      to: "smftr@gmail.com", // ← 改成你的真实邮箱
+      subject: `New Inquiry - ${payload.name}`,
       html: `
         <h2>New Inquiry</h2>
         <p><b>Name:</b> ${payload.name}</p>
@@ -45,12 +48,11 @@ export async function onRequestPost(context) {
       `
     });
 
-    return jsonResponse({ ok: true, result });
+    return jsonResponse({ ok: true });
   } catch (err) {
     return jsonResponse({
       ok: false,
-      error: "Email failed",
-      detail: err.message
+      error: err.message
     }, 500);
   }
 }
